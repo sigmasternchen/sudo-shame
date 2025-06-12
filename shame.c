@@ -19,8 +19,10 @@ int fallback_printf(int _, const char* fmt, ...) {
 
 static sudo_printf_t plugin_printf = fallback_printf;
 
-static char* command = NULL;
-static char* username = NULL;
+static char* script = NULL;
+static char* username = "";
+static char* hostname = "";
+static char* command = "";
 
 static int plugin_open(
 	unsigned int version,
@@ -35,24 +37,25 @@ static int plugin_open(
 	const char **errstr
 ) {
 	plugin_printf = sudo_plugin_plugin_printf;
-	//plugin_printf(SUDO_CONV_INFO_MSG, "open\n");
 
 	const char* user_key = "user=";
 	size_t user_key_length = strlen(user_key);
+
+	const char* host_key = "host=";
+	size_t host_key_length = strlen(host_key);
 
 	for(int i = 0; user_info[i] != NULL; i++) {
 		if (strncmp(user_info[i], user_key, user_key_length) == 0) {
 			username = strdup(user_info[i] + user_key_length);
 		}
-	}
-	if (!username) {
-		username = "";
+		if (strncmp(user_info[i], host_key, host_key_length) == 0) {
+			hostname = strdup(user_info[i] + host_key_length);
+		}
 	}
 
 	for(int i = 0; plugin_options != NULL && plugin_options[i] != NULL; i++) {
-		//plugin_printf(SUDO_CONV_INFO_MSG, "opt: %s\n", plugin_options[i]);
-		if (!command) {
-			command = strdup(plugin_options[i]);
+		if (!script) {
+			script = strdup(plugin_options[i]);
 		}
 	}
 
@@ -60,7 +63,6 @@ static int plugin_open(
 }
 
 static void plugin_close(int status_type, int status) {
-	//plugin_printf(SUDO_CONV_INFO_MSG, "close\n");
 }
 
 static int plugin_accept(
@@ -71,19 +73,20 @@ static int plugin_accept(
 	char * const run_envp[],
 	const char **errstr
 ) {
-	//plugin_printf(SUDO_CONV_INFO_MSG, "accept\n");
 	return 1;
 }
 
-static void send_message() {
+static void invoke_script() {
 	if (!command) {
-		//plugin_printf(SUDO_CONV_INFO_MSG, "Command missing in plugin options.\n");
+		plugin_printf(SUDO_CONV_INFO_MSG, "Script missing in plugin options.\n");
 		return;
 	}
 
 	char* args[] = {
-		command,
+		script,
 		username,
+		hostname,
+		command,
 		NULL
 	};
 	char* env[] = {
@@ -99,7 +102,7 @@ static void send_message() {
 		dup2(pipefd[1], STDOUT_FILENO);
 		close(pipefd[1]);
 
-		execve(command, args, env);
+		execve(script, args, env);
 		exit(1);	
 	} else {
 		close(pipefd[1]);
@@ -123,8 +126,16 @@ static int plugin_reject(
 	char * const command_info[],
 	const char **errstr
 ) {
-	//plugin_printf(SUDO_CONV_INFO_MSG, "reject\n");
-	send_message();
+	const char* command_key = "command=";
+	size_t command_key_length = strlen(command_key);
+
+	for(int i = 0; command_info[i] != NULL; i++) {
+		if (strncmp(command_info[i], command_key, command_key_length) == 0) {
+			command = strdup(command_info[i] + command_key_length);
+		}
+	}
+
+	invoke_script();
 	return 1;
 }
 
@@ -135,12 +146,10 @@ static int plugin_error(
 	char * const command_info[],
 	const char **errstr
 ) {
-	//plugin_printf(SUDO_CONV_INFO_MSG, "error\n");
 	return 1;
 }
 
 static int show_version(int verbose) {
-	//plugin_printf(SUDO_CONV_INFO_MSG, "show_version\n");
 	return 1;
 }
 
@@ -148,14 +157,12 @@ static void register_hooks(
 	int version,
 	int (*register_hook)(struct sudo_hook *hook)
 ) {
-	//plugin_printf(SUDO_CONV_INFO_MSG, "register_hooks\n");
 }
 
 static void deregister_hooks(
 	int version,
 	int (*deregister_hook)(struct sudo_hook *hook)
 ) {
-	//plugin_printf(SUDO_CONV_INFO_MSG, "deregister_hooks\n");
 }
 
 struct audit_plugin shame = {
