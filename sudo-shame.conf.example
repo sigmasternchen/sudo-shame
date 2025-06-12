@@ -1,0 +1,5 @@
+host=""
+token=""
+
+cw="automated post"
+content="sudo: 3 incorrect password attempts"
