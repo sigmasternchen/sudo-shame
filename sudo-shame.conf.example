@@ -1,5 +1,16 @@
-host=""
-token=""
+#!/bin/sh
+# The following variables are availbles:
+# $username - the user who tried to use sudo
+# $user_command - the command the user tried to execute
+# $hostname - the hostname of the system
 
-cw="automated post"
-content="sudo: 3 incorrect password attempts"
+# settings for webhook.sh
+webhook_url=""
+webhook_custom_header=""
+webhook_body=""
+
+# settings for misskey.sh
+misskey_host=""
+misskey_token=""
+misskey_cw="automated post"
+misskey_content="sudo: 3 incorrect password attempts"
