@@ -188,18 +188,6 @@ static int show_version(int verbose) {
 	return 1;
 }
 
-static void register_hooks(
-	int version,
-	int (*register_hook)(struct sudo_hook *hook)
-) {
-}
-
-static void deregister_hooks(
-	int version,
-	int (*deregister_hook)(struct sudo_hook *hook)
-) {
-}
-
 struct audit_plugin shame = {
 	.type = SUDO_AUDIT_PLUGIN,
 	.version = SUDO_API_VERSION,
@@ -209,7 +197,7 @@ struct audit_plugin shame = {
 	.reject = plugin_reject,
 	.error = plugin_error,
 	.show_version = show_version,
-	.register_hooks = register_hooks,
-	.deregister_hooks = deregister_hooks,
+	.register_hooks = NULL,
+	.deregister_hooks = NULL,
 	.event_alloc = NULL,
 };
