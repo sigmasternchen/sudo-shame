@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+#include <errno.h>
 #include <alloca.h>
 #include <unistd.h>
 #include <sys/wait.h>
@@ -19,6 +20,11 @@ int fallback_printf(int _, const char* fmt, ...) {
 
 static sudo_printf_t plugin_printf = fallback_printf;
 
+// Probably undefined behavior in POSIX, but I'll mainly target Linux for now.
+// In glibc seteuid defaults to no-ops on -1 according to its man page, so I'm just going 
+// to assume that uid_t is a signed type.
+static uid_t uid = -1;
+static gid_t gid = -1;
 static char* script = NULL;
 static char* username = "";
 static char* hostname = "";
@@ -53,9 +59,31 @@ static int plugin_open(
 		}
 	}
 
+
+	size_t number_of_options = 0;
 	for(int i = 0; plugin_options != NULL && plugin_options[i] != NULL; i++) {
-		if (!script) {
-			script = strdup(plugin_options[i]);
+		number_of_options++;
+	}
+
+	if (number_of_options >= 1) {
+		script = strdup(plugin_options[0]);
+	}
+	if (number_of_options >= 2) {
+		const char* uid_option = plugin_options[1];
+		char* endptr;
+		uid = strtol(uid_option, &endptr, 10);
+		if (*endptr != '\0') {
+			plugin_printf(SUDO_CONV_INFO_MSG, "invalid uid for sudo-shame: %s\n", uid_option);
+			uid = -1;
+		}
+	}
+	if (number_of_options >= 3) {
+		const char* gid_option = plugin_options[2];
+		char* endptr;
+		gid = strtol(gid_option, &endptr, 10);
+		if (*endptr != '\0') {
+			plugin_printf(SUDO_CONV_INFO_MSG, "invalid gid for sudo-shame: %s\n", gid_option);
+			gid = -1;
 		}
 	}
 
@@ -77,7 +105,7 @@ static int plugin_accept(
 }
 
 static void invoke_script() {
-	if (!command) {
+	if (!script) {
 		plugin_printf(SUDO_CONV_INFO_MSG, "Script missing in plugin options.\n");
 		return;
 	}
@@ -101,6 +129,13 @@ static void invoke_script() {
 		close(pipefd[0]);
 		dup2(pipefd[1], STDOUT_FILENO);
 		close(pipefd[1]);
+
+		if (setuid(uid) < 0) {
+			printf("seteuid: %s\n", strerror(errno));
+		}
+		if (setgid(gid) < 0) {
+			printf("setegid: %s\n", strerror(errno));
+		}
 
 		execve(script, args, env);
 		exit(1);	
