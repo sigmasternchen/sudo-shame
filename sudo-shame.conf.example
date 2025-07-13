@@ -9,8 +9,16 @@ webhook_url=""
 webhook_custom_header=""
 webhook_body=""
 
+# settings for mastodon.sh
+mastodon_host=""
+mastodon_token=""
+mastodon_cw=""
+mastodon_content="sudo: 3 incorrect password attempts"
+mastodon_url_format="https://%s/@%s/%s"
+
 # settings for misskey.sh
 misskey_host=""
 misskey_token=""
-misskey_cw="automated post"
+misskey_cw=""
 misskey_content="sudo: 3 incorrect password attempts"
+

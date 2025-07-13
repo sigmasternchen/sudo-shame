@@ -16,6 +16,7 @@ install: dependencies shame.so
 	chmod 544 /etc/sudo-shame.conf
 	@echo ""
 	@echo "Enable sudo-shame by adding one of these lines to your /etc/sudo.conf:"
+	@echo "Module shame shame.so /usr/local/lib/sudo-shame/mastodon.sh $$(id -u sudoshame) $$(id -g sudoshame)"
 	@echo "Module shame shame.so /usr/local/lib/sudo-shame/misskey.sh $$(id -u sudoshame) $$(id -g sudoshame)"
 	@echo "Module shame shame.so /usr/local/lib/sudo-shame/webhook.sh $$(id -u sudoshame) $$(id -g sudoshame)"
 	@echo ""
